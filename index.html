@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фонкод 2024 — Платформа Блиц-Турниров</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CodeMirror 5 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.com/npm/katex@0.16.8/dist/katex.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- JS CDN Dependencies -->
+    <script defer src="https://cdn.jsdelivr.com/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+
+    <!-- Custom JS App Script -->
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- NAVIGATION HEADER -->
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-bolt"></i>
+            <span>ФОНКОД <span style="font-weight: 300; font-size: 0.9rem; color: var(--text-muted);">BLITZ 2024</span></span>
+        </div>
+
+        <nav class="nav-links">
+            <button class="nav-btn active" onclick="switchView('bracket')">
+                <i class="fa-solid fa-sitemap"></i> Сетка
+            </button>
+            <button class="nav-btn" onclick="switchView('spectator')">
+                <i class="fa-solid fa-eye"></i> Зритель
+            </button>
+            <button class="nav-btn" onclick="switchView('match')">
+                <i class="fa-solid fa-code"></i> Участник
+            </button>
+            <button class="nav-btn" onclick="switchView('admin')">
+                <i class="fa-solid fa-sliders"></i> Админка
+            </button>
+        </nav>
+
+        <div class="header-actions">
+            <div class="live-badge">
+                <div class="live-dot"></div> LIVE
+            </div>
+            <button class="btn btn-secondary" onclick="toggleBigScreen()" title="Режим трансляции">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+    </header>
+
+    <main id="app">
+
+        <!-- ==================== 1. TOURNAMENT BRACKET VIEW ==================== -->
+        <section id="view-bracket" class="view-screen active">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="font-size: 2rem; font-weight: 800;">Олимпийская Сетка Турнира</h1>
+                <p style="color: var(--text-muted);">Блиц-турнир по спортивному программированию 1v1</p>
+            </div>
+
+            <div class="bracket-container" id="bracket-render-target">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- ==================== 2. ADMIN PANEL VIEW ==================== -->
+        <section id="view-admin" class="view-screen">
+            <h2 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-gear"></i> Панель Администратора</h2>
+
+            <div class="admin-grid">
+                <!-- Tournament Settings -->
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 1rem; color: var(--p1-color);">Параметры Турнира</h3>
+                    <div class="form-group">
+                        <label>Название турнира</label>
+                        <input type="text" id="cfg-title" class="form-control" value="Фонкод 2024 Final Cup">
+                    </div>
+                    <div class="form-group">
+                        <label>Формат матча</label>
+                        <select class="form-control">
+                            <option>1v1 Blitz (5 задач, 20 минут)</option>
+                            <option>1v1 Hardcore (3 задачи, 40 минут)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Пригласительная ссылка для зрителей/участников</label>
+                        <div class="invite-box">
+                            <input type="text" id="invite-url" class="form-control" value="https://foncode.ru/join?t=8f93a1" readonly>
+                            <button class="btn btn-secondary" onclick="copyInviteLink()"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="generateBracketFromAdmin()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Перегенерировать Сетку (8 участников)
+                    </button>
+                </div>
+
+                <!-- Participant Management & Manual Controls -->
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 1rem; color: var(--p2-color);">Участники и Посев</h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="new-player-name" class="form-control" placeholder="Имя участника...">
+                        <button class="btn btn-secondary" onclick="addParticipant()"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+
+                    <ul class="participant-list" id="participants-ul">
+                        <!-- Injected via JS -->
+                    </ul>
+
+                    <h4 style="margin: 1.5rem 0 0.5rem 0; color: var(--text-muted);">Ручное вмешательство в матч</h4>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="triggerAdminAction('Пауза')"><i class="fa-solid fa-pause"></i> Пауза</button>
+                        <button class="btn btn-secondary" onclick="triggerAdminAction('+5 минут')"><i class="fa-solid fa-clock"></i> +5 мин</button>
+                        <button class="btn btn-danger" onclick="triggerAdminAction('Техпобеда P1')"><i class="fa-solid fa-trophy"></i> Техпобеда Ира</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. PARTICIPANT MATCH VIEW ==================== -->
+        <section id="view-match" class="view-screen">
+            <div class="timer-header" id="match-timer">
+                <i class="fa-solid fa-stopwatch"></i> <span id="timer-display">20:00</span>
+            </div>
+
+            <div class="match-workspace">
+                <!-- Left: Problems Sidebar -->
+                <div class="problems-sidebar" id="problems-list">
+                    <!-- Dynamic problem tabs -->
+                </div>
+
+                <!-- Center: Problem Statement -->
+                <div class="glass-card problem-statement">
+                    <div class="problem-title" id="prob-title">A. Массив Вспышек</div>
+                    <div id="prob-body" style="line-height: 1.6; color: #d1d5db; font-size: 0.95rem;">
+                        <!-- Rendered Markdown/Math -->
+                    </div>
+                </div>
+
+                <!-- Right: Code Editor & Submission -->
+                <div class="glass-card editor-container">
+                    <div class="editor-header">
+                        <select id="lang-select" class="form-control" style="width: auto;" onchange="changeLanguage()">
+                            <option value="python">Python 3.10</option>
+                            <option value="cpp">C++ 17 (GCC)</option>
+                        </select>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-floppy-disk"></i> Автосохранение</span>
+                    </div>
+
+                    <textarea id="code-editor"></textarea>
+
+                    <div id="verdict-box" class="verdict-banner">
+                        <i class="fa-solid fa-spinner fa-spin" id="verdict-spinner"></i>
+                        <span id="verdict-text">Тестирование на тесте 4...</span>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%;" onclick="submitSolution()">
+                        <i class="fa-solid fa-paper-plane"></i> Отправить решение
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 4. SPECTATOR MAP VIEW ==================== -->
+        <section id="view-spectator" class="view-screen">
+            <div class="spectator-header">
+                <div class="vs-player">
+                    <i class="fa-solid fa-user-ninja p1-name"></i>
+                    <span class="p1-name" id="spec-p1-name">Ира</span>
+                </div>
+
+                <div class="vs-score">
+                    <span id="score-p1" style="color: var(--p1-color);">2</span> : <span id="score-p2" style="color: var(--p2-color);">1</span>
+                </div>
+
+                <div class="vs-player">
+                    <span class="p2-name" id="spec-p2-name">Дима</span>
+                    <i class="fa-solid fa-user-astronaut p2-name"></i>
+                </div>
+            </div>
+
+            <!-- Race Track Visualizer -->
+            <div class="map-track-container">
+                <div class="track-line-bg"></div>
+
+                <div class="track-checkpoints" id="track-checkpoints">
+                    <!-- Checkpoints A, B, C, D, E injected JS -->
+                </div>
+
+                <div class="player-tokens-layer">
+                    <div class="player-token token-p1" id="token-p1" style="left: 0%;">Ира</div>
+                    <div class="player-token token-p2" id="token-p2" style="left: 0%;">Дима</div>
+                </div>
+            </div>
+
+            <!-- Live Event Stream Log -->
+            <div class="non-essential">
+                <h3 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-muted);"><i class="fa-solid fa-list-ul"></i> Лог событий матча в реальном времени</h3>
+                <div class="events-log-container" id="events-log">
+                    <!-- Live logs injected here -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="toast">Уведомление</div>
+
+</body>
+</html>
